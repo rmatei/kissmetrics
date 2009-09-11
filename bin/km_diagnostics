@@ -1,0 +1,210 @@
+#!/usr/bin/env ruby
+#*
+# Diagnostics tool to check your KISSmetrics installation
+# 
+# This script should be run after installation if you are unable to use km_install + php
+#
+# @package KISSmetrics
+#/
+
+#*
+# @ignore
+#/
+$: << File.expand_path(File.dirname(__FILE__))
+require 'rubygems'
+begin
+    require 'km_conf'
+rescue LoadError
+  puts 'You must run km_diagnostics from the same directory as your km_conf.rb file, or make sure that your km_conf.rb is in the global include path.'
+  exit
+end
+require 'kissmetrics'
+require 'km_url'
+require 'etc' # for whoami
+include KMConf
+
+
+  
+#*
+# @ignore
+#/
+def get_choice(choices)
+  puts('')
+  possible_answers = []
+  choice_num = 1
+  choices.each do |choice|
+    puts "#{choice_num}) #{choice}"
+    possible_answers = choice_num
+  end
+
+  choice = nil
+  while(not choice)
+    puts ""
+    print "Enter choice #{possible_answers.join(',')}: "
+    choice = gets.strip
+
+    if not possible_answers.include? choice
+      puts "    #{choice.inspect} is not a valid choice."
+      choice = nil
+    end
+  end
+  return nil
+end
+
+#*
+# @ignore
+#/
+def run_diagnostics(command_line=false)
+
+#===================================*/
+#=           DIAGNOSTICS           =*/
+#===================================*/
+  user_name_warning if command_line
+
+  print("\n\n")
+  # Check if log directory is writable
+  print('* Checking if log directory (' + KM_LOG_DIR + ') is writable... ')
+  if not File.directory? KM_LOG_DIR
+    print('[ERROR]' + "\n")
+    print("\n\t" + KM_LOG_DIR  +  " does not exist yet or is not a directory.\n   Please make it or update the KM_LOG_DIR setting in this file (we don\'t want to make it for you and mess up your nice server)" + "\n\n")
+  else
+    if not File.writable? KM_LOG_DIR
+      print('[ERROR]' + "\n")
+      print("\n\t" + 'KM_LOG_DIR (' + KM_LOG_DIR + ') is not writable by ' + (whoami ? whoami : 'this user') + ' +  Please make sure that there is enough disk space and that proper permissions are set' + "\n\n")
+    else
+      print('[OK]' + "\n")
+    end
+  end
+
+  # Check available disk space
+  print('* Checking available disk space...')
+  free_disk_space = disk_free_space('.')
+  min_bytes = 1*1024*1024; # Recommend having at least 1 GB free
+  if ( free_disk_space > min_bytes)
+    print("(#{free_disk_space} kilobytes free) [OK]\n")
+  else
+    print('[WARNING]' + "\n")
+    print("\n\tRecommend having at least #{min_bytes} bytes free, but only have #{free_disk_space} free\n\n")
+  end
+
+  # Make sure that KM_RUBY_CLI exists and is executable
+  print('* Checking for Ruby...')
+  return_status = nil
+
+  ruby_version = %x|#{KM_RUBY_CLI} -v 2>/dev/null|.strip
+  if not ruby_version.empty?
+    puts "[OK]   (using #{ruby_version})"
+  else
+    print('[WARNING]' + "\n")
+    print("\n\t" + 'Could not execute ruby with command `' + KM_RUBY_CLI + '`' + "\n\n")
+  end
+
+  # Make sure that curl exists and is executable
+  print('* Checking for curl...')
+  curl_version = %x|curl -V 2>/dev/null|.strip.split("\n").first
+
+  if curl_version
+    puts "[OK]   (using #{curl_version})"
+  else
+    puts "[ERROR]"
+    puts "    Could not find curl. Please excute `which curl` to find out where it is, or install it."
+  end
+
+  # Make sure that gzip exists and is executable
+  print('* Checking for gzip...');  
+  gzip_version = %x|gzip -V 2>&1|.strip
+
+  if not gzip_version.empty?
+    puts "[OK]"
+  else
+    puts "[ERROR]"
+    puts "    Could not find gzip. Please excute `which gzip` to find out where it is, or install it."
+  end
+
+  # Check to make sure KM_MAT_DAEMON exists
+  print('* Checking for MAT daemon...')
+  if not File.file? KM_MAT_DAEMON
+    print('[ERROR]' + "\n")
+    print("\n\t" + 'Could not find KM_MAT_DAEMON at ' + KM_MAT_DAEMON.inspect + ' +  Please update km_api + conf + php' + "\n\n");   
+  else
+      print('[OK]' + "\n")
+
+    data = %x|export km_id=diagnostic && #{KM_RUBY_CLI} #{KM_MAT_DAEMON}  2>&1|
+    print "* Running MAT daemon diagnostics..."
+    if $?.exitstatus != 7
+      puts "[ERROR]\n    #{KM_MAT_DAEMON} diagnostic failed (Exit status: #{$?.exitstatus})"
+    else
+      puts "[OK]"
+    end
+    puts data
+  end
+
+  print("\n\n")
+end
+
+#*
+# @ignore
+#/
+def whoami
+  return Etc.getpwuid.name
+end
+
+#*
+# @ignore
+#/
+def user_name_warning()
+
+  username = whoami()
+
+  if (username)
+    username_message = %|
+You are running this script as user:
+
+    #{username}
+|
+  else
+    username_message = "Unable to determine user name.\n"
+  end
+
+
+  puts %|
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!                             WARNING                              !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  #{username_message}
+
+Please confirm that your running as the same user under which PHP runs.
+If not, re-run this script as the correct user:
+
+  sudo -u username /path/to/php -d safe_mode=off km_diagnostic.php
+
+Failure to run as the correct user can prevent the installer from
+correctly setting up KISSmetrics and cause the diagnostic tool to
+show inaccurate results.
+|
+
+  choices = [
+    "This script is being run under the correct user.  Please continue.",
+    "Quit so that I can run this script as a different user."
+  ]
+
+  user_choice = get_choice(choices)
+
+  if (user_choice == 2)
+    exit()
+  end
+end
+def disk_free_space(vol)
+    last = %x|df -k #{vol} 2>/dev/null|.split("\n").last
+  if last
+    return last.split[3].to_i
+  end
+  raise "[ERROR]: `df #{vol}` failed to give us information about available diskspace."
+end
+
+if ENV['RUBY_SELF'] == 'km_diagnostics.rb' or ENV['RUBY_SELF'] == ""
+  run_diagnostics true
+end
+run_diagnostics

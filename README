@@ -1,0 +1,25 @@
+KISSmetrics provides custom metrics for applications.
+
+Find out more at http://www.kissmetrics.com
+
+== Installation ==
+1. Install the kissmetrics gem
+  sudo gem install kissmetrics
+  
+2. Download the km_conf.rb from the KISSmetrics Dev Center for your product.
+
+3. Edit km_conf.rb as necessary.
+
+4. Run km_diagnostics to verify your installation:
+
+  km_diagnostics
+  
+NOTE: You must run km_diagnostics from the same directory as your km_conf.rb file,
+or make sure that your km_conf.rb is in the global include path.
+
+5. Fix your km_conf.rb as necessary.
+
+6. Read over the documentation at http://docs.kissmetrics.com
+
+Please don't hesitate to contact support@kissmetrics.com if you have any questions.
+ 
