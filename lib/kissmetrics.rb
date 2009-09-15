@@ -49,6 +49,7 @@ class KMCore
   end
 
   def record(name, props={},timestamp=nil)
+    return false
     begin
       if do_track
         @actions << KMAction.new(name,props)
@@ -100,6 +101,7 @@ class KMCore
   end
 
   def log_all_actions
+    return false
     begin
       @actions.each do |action|
         if not action.logged
@@ -114,6 +116,7 @@ class KMCore
   end
 
   def check_if_log_needs_rotating(force=false)
+    return false
     log_file_size = log_start_time = nil
 
     if File.exists? KM_CURRENT_LOG
@@ -392,6 +395,7 @@ class KMCore
   end
 
   def assign(name, value, type)
+    return false
     begin
       @assigns[name] = [value,type]
     rescue Exception => e
