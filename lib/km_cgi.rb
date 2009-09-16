@@ -10,6 +10,7 @@ class KMCookie
       @@cookies[KM_COOKIE_PREFIX + key.to_s]
     end
     def init(env_hash)
+      return if KMConf::KM_DISABLED
       @@cookies = env_hash
     end
 
@@ -33,6 +34,7 @@ class KMSession
       @@session[key]
     end
     def set_env(env_hash)
+      return if KMConf::KM_DISABLED
       @@session = env_hash
     end
 
@@ -69,6 +71,7 @@ class KMServer
       @@server[key]
     end
     def set_env(env_hash)
+      return if KMConf::KM_DISABLED
       @@server = env_hash
     end
     def to_s
