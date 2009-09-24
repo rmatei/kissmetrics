@@ -2,7 +2,7 @@
 # 
 # Usage:
 # km_api = KMApi.new(public_token, secret_key)
-# km_api.get(:method => '...', ...)
+# km_api.get(:method => 'single_action_query', :query => {...})
 
 require 'httparty'
 require 'digest/sha1'
@@ -32,6 +32,7 @@ class KMApi
   def get(params = {})
     params[:t] ||= @token
     params[:sid] ||= @sid
+    params[:query] = params[:query].to_json unless params[:query].instance_of? String
     self.class.get('/index.php', :query => params)
   end
 end
