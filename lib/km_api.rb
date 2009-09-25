@@ -30,6 +30,7 @@ class KMApi
   end
   
   def get(params = {})
+    puts "Calling KissMetrics API method #{params[:method]}..."
     params[:t] ||= @token
     params[:sid] ||= @sid
     params[:query] = params[:query].to_json unless params[:query].instance_of? String
