@@ -33,14 +33,14 @@ class KMApi
     @tries = 0 if @tries.nil? or @last_params != params
     @last_params = params
     response = Rails.cache.fetch(memcached_key(params)) { post_request(params.dup) }
-    valid_response?(response) ? response : raise("Invalid response: #{response.inspect}")
+    valid_response?(response) ? response : raise("==> Invalid response: #{response.inspect}")
   rescue Exception => e
     puts e.message
     Rails.cache.delete(memcached_key(params))
     @tries += 1 
-    if @tries <= 3
-      sleep 0.25
-      puts "Retrying API query..."
+    if @tries <= 1
+      sleep 0.1
+      puts "==> Retrying query..."
       retry 
     end
     {}
@@ -50,7 +50,7 @@ class KMApi
     puts "Kissmetrics API call: #{params.inspect}..."
     params[:t] ||= @token
     params[:sid] ||= @sid
-    params[:query] = params[:query].to_json unless params[:query].instance_of? String
+    # params[:query] = params[:query].to_json unless params[:query].instance_of? String
     self.class.get('/index.php', :query => params)
   end
   
