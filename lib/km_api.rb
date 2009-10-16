@@ -61,6 +61,15 @@ class KMApi
   end
   
   def memcached_key(params)
-    "km_api_#{params}" 
+    returning "km_#{params}" do |key|
+      # shorten key
+      ['method', 'action_query', 'select', 'date_to', 'date_from', 'typeprop', 'query', 'conditions'].each do |string|
+        key.gsub!(string, '')
+      end
+      if key.size > 246
+        key = key.first(246)
+        RAILS_DEFAULT_LOGGER.warn "shortening Kissmetrics memcached key to '#{key}'!"
+      end
+    end
   end
 end
