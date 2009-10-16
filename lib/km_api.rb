@@ -10,7 +10,7 @@ require 'digest/sha1'
 class KMApi
   include HTTParty
   base_uri 'http://beta-almanac.kissmetrics.com'
-  default_params :version => 1.5, :format => 'json'
+  default_params :version => 1.0, :format => 'json'
   format :json
   
   def initialize(token, secret_key)
