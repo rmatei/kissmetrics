@@ -21,19 +21,45 @@ class KMApi
   
   def authenticate
     puts "Logging in to Kissmetrics..."
-    response = get(:method => 'get_salt')
+    response = post_request(:method => 'get_salt')
     raise SecurityError, "Authentication failed: #{response.inspect}" if response["salt"].blank?
     @sid = response["sid"]
     hash = Digest::SHA1.hexdigest("__km__#{response["salt"]}#{@secret_key}")
-    response = get(:method => 'login', :sid => response["sid"], :h => hash)
+    response = post_request(:method => 'login', :sid => response["sid"], :h => hash)
     response['logged_in'] ? puts("Success!") : raise(SecurityError, "Authentication failed.")
   end
   
   def get(params = {})
+    @tries = 0 if @tries.nil? or @last_params != params
+    @last_params = params
+    response = Rails.cache.fetch(memcached_key(params)) { post_request(params) }
+    valid_response?(response) ? response : raise("Invalid response: #{response.inspect}")
+  rescue Exception => e
+    puts e.message
+    Rails.cache.delete(memcached_key(params))
+    @tries += 1 
+    if @tries <= 3
+      sleep 0.25
+      puts "Retrying API query..."
+      retry 
+    end
+  end
+  
+  def post_request(params = {})
     puts "Kissmetrics API call: #{params.inspect}..."
     params[:t] ||= @token
     params[:sid] ||= @sid
     params[:query] = params[:query].to_json unless params[:query].instance_of? String
     self.class.get('/index.php', :query => params)
+  end
+  
+  private
+  
+  def valid_response?(response)
+    response.instance_of? Hash and !response["segments"].blank?
+  end
+  
+  def memcached_key(params)
+    "km_api_#{params}"
   end
 end
