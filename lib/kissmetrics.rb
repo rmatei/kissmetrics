@@ -533,6 +533,16 @@ class KMCore
     rescue Exception => e
     end
   end
+  
+  begin
+    require "#{RAILS_ROOT}/vendor/plugins/rpm/init"
+    [:assign, :record, :log_all_actions].each do |method|
+      add_method_tracer :method, "Custom/Kissmetrics/#{method}"
+    end
+  rescue
+    puts "Failed to add New Relic instrumentation to Kissmetrics."
+  end
+  
 end
 
 class KMAction
