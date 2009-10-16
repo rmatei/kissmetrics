@@ -32,7 +32,7 @@ class KMApi
   def get(params = {})
     @tries = 0 if @tries.nil? or @last_params != params
     @last_params = params
-    response = Rails.cache.fetch(memcached_key(params)) { post_request(params) }
+    response = Rails.cache.fetch(memcached_key(params)) { post_request(params.dup) }
     valid_response?(response) ? response : raise("Invalid response: #{response.inspect}")
   rescue Exception => e
     puts e.message
@@ -43,6 +43,7 @@ class KMApi
       puts "Retrying API query..."
       retry 
     end
+    {}
   end
   
   def post_request(params = {})
@@ -56,10 +57,10 @@ class KMApi
   private
   
   def valid_response?(response)
-    response.instance_of? Hash and !response["segments"].blank?
+    response.instance_of? Hash and response["segments"]
   end
   
   def memcached_key(params)
-    "km_api_#{params}"
+    "km_api_#{params}" 
   end
 end
