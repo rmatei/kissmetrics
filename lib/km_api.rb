@@ -39,7 +39,7 @@ class KMApi
     Rails.cache.delete(memcached_key(params))
     @tries += 1 
     if @tries <= 1
-      sleep 0.1
+      sleep 10 if e.instance_of? Timeout::Error
       puts "==> Retrying query..."
       retry 
     end
