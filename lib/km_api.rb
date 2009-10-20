@@ -10,7 +10,7 @@ require 'digest/sha1'
 class KMApi
   include HTTParty
   base_uri 'http://beta-almanac.kissmetrics.com'
-  default_params :version => 1.0, :format => 'json'
+  default_params :format => 'json'
   format :json
   
   def initialize(token, secret_key)
@@ -50,7 +50,8 @@ class KMApi
     puts "Kissmetrics API call: #{params.inspect}..."
     params[:t] ||= @token
     params[:sid] ||= @sid
-    # params[:query] = params[:query].to_json unless params[:query].instance_of? String
+    params[:version] ||= 1.0
+    params[:query] = params[:query].to_json unless params[:query].instance_of? String
     self.class.get('/index.php', :query => params)
   end
   
