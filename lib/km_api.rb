@@ -45,6 +45,7 @@ class KMApi
     end
     {}
   end
+  add_method_tracer :get
   
   def post_request(params = {})
     puts "Kissmetrics API call: #{params.inspect}..."
