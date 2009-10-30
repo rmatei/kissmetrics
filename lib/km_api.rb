@@ -65,7 +65,7 @@ class KMApi
   def memcached_key(params)
     returning "km_#{params}_#{Date.today.to_s}" do |key|
       # shorten key
-      ['method', 'action_query', 'select', 'date_to', 'date_from', 'typeprop', 'query', 'conditions', 'relative_date'].each do |string|
+      ['method', 'action_query', 'select', 'date_to', 'date_from', 'typeprop', 'query', 'conditions', 'relative_date', ' '].each do |string|
         key.gsub!(string, '')
       end
       if key.size > 246
